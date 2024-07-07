@@ -5,8 +5,6 @@ import com.marzieh.bankingapp.entities.Transaction;
 import com.marzieh.bankingapp.exception.AccountNotFoundException;
 import com.marzieh.bankingapp.exception.InsufficientFundsException;
 import com.marzieh.bankingapp.repositories.TransactionRepository;
-import com.marzieh.bankingapp.services.AccountService;
-import com.marzieh.bankingapp.services.TransactionService;
 import com.marzieh.bankingapp.util.TransactionType;
 
 public class TransactionServiceImpl implements TransactionService {
@@ -47,13 +45,15 @@ public class TransactionServiceImpl implements TransactionService {
         Account fromAccount = getAccount(fromAccountNumber);
         Account toAccount = getAccount(toAccountNumber);
 
-        Transaction transaction = new Transaction(TransactionType.WITHDRAWAL, amount, fromAccountNumber, "Transfer money to account number: " + toAccount.getAccountNumber());
-        accountService.withdraw(fromAccount, amount);
-        transactionRepository.saveTransaction(transaction);
+        synchronized (this) {
+            Transaction transaction = new Transaction(TransactionType.WITHDRAWAL, amount, fromAccountNumber, "Transfer money to account number: " + toAccount.getAccountNumber());
+            accountService.withdraw(fromAccount, amount);
+            transactionRepository.saveTransaction(transaction);
 
-        Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, fromAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
-        accountService.deposit(toAccount, amount);
-        transactionRepository.saveTransaction(toAccountTransaction);
+            Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, fromAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
+            accountService.deposit(toAccount, amount);
+            transactionRepository.saveTransaction(toAccountTransaction);
+        }
     }
 
     private Account getAccount(int accountNumber) throws AccountNotFoundException {
