@@ -57,55 +57,5 @@ public class Transaction {
                 ", description='" + description + '\'' +
                 '}';
     }
-
-    /*
-
-    public void deposit(double amount) throws BankingException {
-        if (amount <= 0) {
-            throw new BankingException("Deposit amount must be positive.");
-        }
-        lock.lock();
-        try {
-            balance += amount;
-            transactions.add(new Transaction(TransactionType.DEPOSIT, amount, accountNumber, "Deposit"));
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void withdraw(double amount) throws BankingException {
-        if (amount <= 0) {
-            throw new BankingException("Withdrawal amount must be positive.");
-        }
-        lock.lock();
-        try {
-            if (balance < amount) {
-                throw new InsufficientFundsException("Insufficient funds.");
-            }
-            balance -= amount;
-            transactions.add(new Transaction(TransactionType.WITHDRAWAL, amount, accountNumber, "Withdrawal"));
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void transferTo(Account destinationAccount, double amount) throws BankingException {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Transfer amount must be positive.");
-        }
-        lock.lock();
-        try {
-            this.withdraw(amount);
-            destinationAccount.deposit(amount);
-            Transaction transferTransaction = new Transaction(TransactionType.TRANSFER, amount, this.accountNumber, "Transfer to account " + destinationAccount.getAccountNumber());
-            this.transactions.add(transferTransaction);
-            destinationAccount.getTransactions().add(new Transaction(TransactionType.TRANSFER, amount, destinationAccount.getAccountNumber(), "Transfer from account " + this.accountNumber));
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-     */
 }
 
