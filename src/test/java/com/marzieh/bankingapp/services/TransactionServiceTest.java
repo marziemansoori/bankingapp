@@ -14,6 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -178,5 +182,61 @@ public class TransactionServiceTest {
         verify(accountService, never()).withdraw(any(Account.class), anyDouble());
         verify(accountService, never()).deposit(any(Account.class), anyDouble());
         verify(transactionRepository, never()).saveTransaction(any(Transaction.class));
+    }
+
+    @Test
+    public void testTransferMoney_ThreadSafety() throws InterruptedException, AccountNotFoundException, InsufficientFundsException {
+        LegalCustomer fromCustomer = new LegalCustomer("1", "John", "1234567890", "0987654321");
+        LegalCustomer toCustomer = new LegalCustomer("2", "Sarah", "876543788", "9877654455");
+        Account fromAccount = new Account(fromCustomer);
+        Account toAccount = new Account(toCustomer);
+
+        // initial balance
+        fromAccount.setBalance(10000.0);
+        toAccount.setBalance(5000.0);
+
+        when(accountService.findAccountById(fromAccount.getAccountNumber())).thenReturn(fromAccount);
+        when(accountService.findAccountById(toAccount.getAccountNumber())).thenReturn(toAccount);
+
+
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            double amount = invocation.getArgument(1);
+            account.setBalance(account.getBalance() - amount);
+            return null;
+        }).when(accountService).withdraw(any(Account.class), anyDouble());
+
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            double amount = invocation.getArgument(1);
+            account.setBalance(account.getBalance() + amount);
+            return null;
+        }).when(accountService).deposit(any(Account.class), anyDouble());
+
+
+        int numThreads = 10;
+        double transferAmount = 100.0;
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch latch = new CountDownLatch(numThreads);
+
+        for (int i = 0; i < numThreads; i++) {
+            executorService.submit(() -> {
+                try {
+                    transactionService.transferMoney(fromAccount.getAccountNumber(), toAccount.getAccountNumber(), transferAmount);
+                } catch (AccountNotFoundException | InsufficientFundsException e) {
+                    e.printStackTrace();
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        executorService.shutdown();
+
+        double expectedFromAccountBalance = 10000.0 - numThreads * transferAmount;
+        double expectedToAccountBalance = 5000.0 + numThreads * transferAmount;
+        assertEquals(expectedFromAccountBalance, fromAccount.getBalance(), 0.001);
+        assertEquals(expectedToAccountBalance, toAccount.getBalance(), 0.001);
     }
 }

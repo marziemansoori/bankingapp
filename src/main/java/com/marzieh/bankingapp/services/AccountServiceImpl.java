@@ -6,8 +6,6 @@ import com.marzieh.bankingapp.exception.AccountNotFoundException;
 import com.marzieh.bankingapp.exception.CustomerNotFoundException;
 import com.marzieh.bankingapp.exception.InsufficientFundsException;
 import com.marzieh.bankingapp.repositories.AccountRepository;
-import com.marzieh.bankingapp.services.AccountService;
-import com.marzieh.bankingapp.services.CustomerService;
 
 import java.util.List;
 
@@ -44,12 +42,12 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public void deposit(Account account, double amount) {
+    public synchronized void deposit(Account account, double amount) {
         accountRepository.deposit(account, amount);
     }
 
     @Override
-    public void withdraw(Account account, double amount) throws InsufficientFundsException {
+    public synchronized void withdraw(Account account, double amount) throws InsufficientFundsException {
         if(amount > account.getBalance()) {
             throw new InsufficientFundsException("Insufficient Fund");
         }
