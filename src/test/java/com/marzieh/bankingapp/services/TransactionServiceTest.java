@@ -14,8 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -101,5 +99,84 @@ public class TransactionServiceTest {
         verify(accountService, times(1)).findAccountById(12345);
         verify(accountService, times(0)).deposit(any(Account.class), anyDouble());
         verify(transactionRepository, times(0)).saveTransaction(any(Transaction.class));
+    }
+
+    @Test
+    public void testTransferMoney() throws AccountNotFoundException, InsufficientFundsException {
+        LegalCustomer fromCustomer = new LegalCustomer("1", "John", "1234567890", "0987654321");
+        LegalCustomer toCustomer = new LegalCustomer("2", "Sarah", "876543788", "9877654455");
+        Account fromAccount = new Account(fromCustomer);
+        Account toAccount = new Account(toCustomer);
+        fromAccount.setBalance(100);
+
+        when(accountService.findAccountById(fromAccount.getAccountNumber())).thenReturn(fromAccount);
+        when(accountService.findAccountById(toAccount.getAccountNumber())).thenReturn(toAccount);
+
+        doNothing().when(accountService).withdraw(fromAccount, 100.0);
+        doNothing().when(accountService).deposit(toAccount, 100.0);
+
+        transactionService.transferMoney(fromAccount.getAccountNumber(), toAccount.getAccountNumber(), 100.0);
+
+        verify(accountService).withdraw(fromAccount, 100.0);
+        verify(accountService).deposit(toAccount, 100.0);
+
+        // Verify that the transactions were saved correctly
+        verify(transactionRepository, times(1)).saveTransaction(argThat(transaction ->
+                transaction.getType() == TransactionType.WITHDRAWAL &&
+                        transaction.getAmount() == 100.0 &&
+                        transaction.getAccountNumber() == fromAccount.getAccountNumber() &&
+                        transaction.getDescription().equals("Transfer money to account number: " + toAccount.getAccountNumber())
+        ));
+
+        verify(transactionRepository, times(1)).saveTransaction(argThat(transaction ->
+                transaction.getType() == TransactionType.DEPOSIT &&
+                        transaction.getAmount() == 100.0 &&
+                        transaction.getAccountNumber() == toAccount.getAccountNumber() &&
+                        transaction.getDescription().equals("Transfer money from account number: " + fromAccount.getAccountNumber())
+        ));
+    }
+
+    @Test
+    public void testTransferMoney_InsufficientFunds() throws AccountNotFoundException, InsufficientFundsException {
+        LegalCustomer fromCustomer = new LegalCustomer("1", "John", "1234567890", "0987654321");
+        LegalCustomer toCustomer = new LegalCustomer("2", "Sarah", "876543788", "9877654455");
+        Account fromAccount = new Account(fromCustomer);
+        Account toAccount = new Account(toCustomer);
+
+        fromAccount.setBalance(50.0); // Set balance to less than transfer amount
+
+        when(accountService.findAccountById(fromAccount.getAccountNumber())).thenReturn(fromAccount);
+        when(accountService.findAccountById(toAccount.getAccountNumber())).thenReturn(toAccount);
+
+        // Configure withdraw method to throw InsufficientFundsException when amount is greater than balance
+        doAnswer(invocation -> {
+            Account account = invocation.getArgument(0);
+            double amount = invocation.getArgument(1);
+            if (amount > account.getBalance()) {
+                throw new InsufficientFundsException("Insufficient funds");
+            }
+            return null;
+        }).when(accountService).withdraw(any(Account.class), anyDouble());
+
+        assertThrows(InsufficientFundsException.class, () -> {
+            transactionService.transferMoney(fromAccount.getAccountNumber(), toAccount.getAccountNumber(), 1000.0);
+        });
+
+        verify(accountService, never()).withdraw(fromAccount, 100.0);
+        verify(accountService, never()).deposit(toAccount, 100.0);
+        verify(transactionRepository, never()).saveTransaction(any(Transaction.class));
+    }
+
+    @Test
+    public void testTransferMoney_AccountNotFound() throws InsufficientFundsException, AccountNotFoundException {
+        when(accountService.findAccountById(1)).thenThrow(new AccountNotFoundException("Account not found"));
+
+        assertThrows(AccountNotFoundException.class, () -> {
+            transactionService.transferMoney(1, 2, 100.0);
+        });
+
+        verify(accountService, never()).withdraw(any(Account.class), anyDouble());
+        verify(accountService, never()).deposit(any(Account.class), anyDouble());
+        verify(transactionRepository, never()).saveTransaction(any(Transaction.class));
     }
 }

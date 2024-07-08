@@ -50,7 +50,7 @@ public class TransactionServiceImpl implements TransactionService {
             accountService.withdraw(fromAccount, amount);
             transactionRepository.saveTransaction(transaction);
 
-            Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, fromAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
+            Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, toAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
             accountService.deposit(toAccount, amount);
             transactionRepository.saveTransaction(toAccountTransaction);
         }
