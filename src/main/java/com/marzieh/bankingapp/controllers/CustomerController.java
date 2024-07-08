@@ -3,6 +3,7 @@ package com.marzieh.bankingapp.controllers;
 import com.marzieh.bankingapp.entities.Customer;
 import com.marzieh.bankingapp.entities.LegalCustomer;
 import com.marzieh.bankingapp.entities.RealCustomer;
+import com.marzieh.bankingapp.exception.DuplicateCustomerException;
 import com.marzieh.bankingapp.services.CustomerService;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    public void createCustomer() {
+    public void createCustomer() throws DuplicateCustomerException {
 
         // TODO:: add validation for types
         System.out.print("Enter customer type (1 for Real, 2 for Legal): ");
@@ -42,7 +43,7 @@ public class CustomerController {
 
     }
 
-    private void createLegalCustomer(String id, String name, String phoneNumber) {
+    private void createLegalCustomer(String id, String name, String phoneNumber) throws DuplicateCustomerException {
         System.out.print("Enter customer fax number: ");
         String faxNumber = scanner.nextLine();
 
@@ -51,7 +52,7 @@ public class CustomerController {
         System.out.println(legalCustomer);
     }
 
-    private void createRealCustomer(String id, String name, String phoneNumber) {
+    private void createRealCustomer(String id, String name, String phoneNumber) throws DuplicateCustomerException {
         System.out.print("Enter customer family name: ");
         String familyName = scanner.nextLine();
 

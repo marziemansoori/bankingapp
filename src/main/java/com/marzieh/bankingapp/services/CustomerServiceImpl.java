@@ -3,8 +3,8 @@ package com.marzieh.bankingapp.services;
 import com.marzieh.bankingapp.entities.Customer;
 import com.marzieh.bankingapp.entities.LegalCustomer;
 import com.marzieh.bankingapp.entities.RealCustomer;
+import com.marzieh.bankingapp.exception.DuplicateCustomerException;
 import com.marzieh.bankingapp.repositories.CustomerRepository;
-import com.marzieh.bankingapp.services.CustomerService;
 
 import java.util.Map;
 
@@ -17,14 +17,20 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public Customer createLegalCustomer(LegalCustomer legalCustomer) {
-        // TODO:; check customer id should be unique
+    public Customer createLegalCustomer(LegalCustomer legalCustomer) throws DuplicateCustomerException {
+        if (customerRepository.findCustomerById(legalCustomer.getId()) != null) {
+            throw new DuplicateCustomerException("Customer id must be unique");
+        }
+
         return customerRepository.saveLegalCustomer(legalCustomer);
     }
 
     @Override
-    public Customer createRealCustomer(RealCustomer realCustomer) {
-        // TODO:; check customer id should be unique
+    public Customer createRealCustomer(RealCustomer realCustomer) throws DuplicateCustomerException {
+        if (customerRepository.findCustomerById(realCustomer.getId()) != null) {
+            throw new DuplicateCustomerException("Customer id must be unique");
+        }
+
         return customerRepository.saveRealCustomer(realCustomer);
     }
 

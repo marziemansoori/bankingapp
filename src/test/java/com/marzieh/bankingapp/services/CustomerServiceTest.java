@@ -3,6 +3,7 @@ package com.marzieh.bankingapp.services;
 import com.marzieh.bankingapp.entities.Customer;
 import com.marzieh.bankingapp.entities.LegalCustomer;
 import com.marzieh.bankingapp.entities.RealCustomer;
+import com.marzieh.bankingapp.exception.DuplicateCustomerException;
 import com.marzieh.bankingapp.repositories.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ public class CustomerServiceTest {
     }
 
     @Test
-    public void testCreateLegalCustomer() {
+    public void testCreateLegalCustomer() throws DuplicateCustomerException {
         when(customerRepository.saveLegalCustomer(mockLegalCustomer)).thenReturn(mockLegalCustomer);
 
         Customer createdCustomer = customerService.createLegalCustomer(mockLegalCustomer);
@@ -45,7 +46,7 @@ public class CustomerServiceTest {
     }
 
     @Test
-    public void testCreateRealCustomer() {
+    public void testCreateRealCustomer() throws DuplicateCustomerException {
         when(customerRepository.saveRealCustomer(mockRealCustomer)).thenReturn(mockRealCustomer);
 
         Customer createdCustomer = customerService.createRealCustomer(mockRealCustomer);
@@ -77,6 +78,31 @@ public class CustomerServiceTest {
 
         assertNull(foundCustomer);
         verify(customerRepository, times(1)).findCustomerById(customerId);
+    }
+
+    @Test
+    public void testCreateLegalCustomer_DuplicateId() {
+        when(customerRepository.findCustomerById("1")).thenReturn(mockLegalCustomer);
+
+        DuplicateCustomerException exception = assertThrows(DuplicateCustomerException.class, () -> {
+            customerService.createLegalCustomer(mockLegalCustomer);
+        });
+
+        assertEquals("Customer id must be unique", exception.getMessage());
+        verify(customerRepository, never()).saveLegalCustomer(any(LegalCustomer.class));
+    }
+
+    @Test
+    public void testCreateLegalCustomer_Success() throws DuplicateCustomerException {
+        when(customerRepository.findCustomerById("1")).thenReturn(null);
+        when(customerRepository.saveLegalCustomer(mockLegalCustomer)).thenReturn(mockLegalCustomer);
+
+        Customer result = customerService.createLegalCustomer(mockLegalCustomer);
+
+        assertNotNull(result);
+        assertEquals(mockLegalCustomer.getId(), result.getId());
+        assertEquals(mockLegalCustomer.getName(), result.getName());
+        verify(customerRepository).saveLegalCustomer(mockLegalCustomer);
     }
 
 }
