@@ -45,14 +45,16 @@ public class TransactionServiceImpl implements TransactionService {
         Account fromAccount = getAccount(fromAccountNumber);
         Account toAccount = getAccount(toAccountNumber);
 
-        synchronized (this) {
-            Transaction transaction = new Transaction(TransactionType.WITHDRAWAL, amount, fromAccountNumber, "Transfer money to account number: " + toAccount.getAccountNumber());
-            accountService.withdraw(fromAccount, amount);
-            transactionRepository.saveTransaction(transaction);
+        synchronized (fromAccount) {
+            synchronized (toAccount) {
+                Transaction transaction = new Transaction(TransactionType.WITHDRAWAL, amount, fromAccountNumber, "Transfer money to account number: " + toAccount.getAccountNumber());
+                accountService.withdraw(fromAccount, amount);
+                transactionRepository.saveTransaction(transaction);
 
-            Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, toAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
-            accountService.deposit(toAccount, amount);
-            transactionRepository.saveTransaction(toAccountTransaction);
+                Transaction toAccountTransaction = new Transaction(TransactionType.DEPOSIT, amount, toAccountNumber, "Transfer money from account number: " + fromAccount.getAccountNumber());
+                accountService.deposit(toAccount, amount);
+                transactionRepository.saveTransaction(toAccountTransaction);
+            }
         }
     }
 
