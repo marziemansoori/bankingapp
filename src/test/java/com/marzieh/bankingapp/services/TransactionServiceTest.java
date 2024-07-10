@@ -116,9 +116,6 @@ public class TransactionServiceTest {
         when(accountService.findAccountById(fromAccount.getAccountNumber())).thenReturn(fromAccount);
         when(accountService.findAccountById(toAccount.getAccountNumber())).thenReturn(toAccount);
 
-        doNothing().when(accountService).withdraw(fromAccount, 100.0);
-        doNothing().when(accountService).deposit(toAccount, 100.0);
-
         transactionService.transferMoney(fromAccount.getAccountNumber(), toAccount.getAccountNumber(), 100.0);
 
         verify(accountService).withdraw(fromAccount, 100.0);

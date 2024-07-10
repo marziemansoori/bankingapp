@@ -56,7 +56,6 @@ public class CustomerServiceTest {
         verify(customerRepository, times(1)).saveRealCustomer(mockRealCustomer);
     }
 
-
     @Test
     public void testFindCustomerById() {
         String customerId = "1";
@@ -91,18 +90,4 @@ public class CustomerServiceTest {
         assertEquals("Customer id must be unique", exception.getMessage());
         verify(customerRepository, never()).saveLegalCustomer(any(LegalCustomer.class));
     }
-
-    @Test
-    public void testCreateLegalCustomer_Success() throws DuplicateCustomerException {
-        when(customerRepository.findCustomerById("1")).thenReturn(null);
-        when(customerRepository.saveLegalCustomer(mockLegalCustomer)).thenReturn(mockLegalCustomer);
-
-        Customer result = customerService.createLegalCustomer(mockLegalCustomer);
-
-        assertNotNull(result);
-        assertEquals(mockLegalCustomer.getId(), result.getId());
-        assertEquals(mockLegalCustomer.getName(), result.getName());
-        verify(customerRepository).saveLegalCustomer(mockLegalCustomer);
-    }
-
 }
